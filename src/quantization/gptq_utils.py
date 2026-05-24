@@ -132,16 +132,13 @@ def cholesky_inverse(H: torch.Tensor) -> torch.Tensor:
     Returns:
         H_inv: Inverse of H, same shape [d_in, d_in]
     """
-    H_f32 = H.float()
+    # cholesky_inverse is not implemented on MPS; compute on CPU then move back
+    H_cpu = H.float().cpu()
     try:
-        # Cholesky decomposition: H = L @ L.T
-        L = torch.linalg.cholesky(H_f32)
-        # Invert using the triangular structure (much more stable)
+        L = torch.linalg.cholesky(H_cpu)
         H_inv = torch.cholesky_inverse(L)
     except torch.linalg.LinAlgError:
-        # If Cholesky fails (H not positive definite), fall back to pseudoinverse
-        # This can happen with very degenerate weight matrices
         print("  Warning: Cholesky failed, using pseudoinverse instead")
-        H_inv = torch.linalg.pinv(H_f32)
+        H_inv = torch.linalg.pinv(H_cpu)
 
-    return H_inv.to(H.dtype)
+    return H_inv.to(dtype=H.dtype, device=H.device)
