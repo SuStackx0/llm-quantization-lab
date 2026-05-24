@@ -56,6 +56,9 @@ def gptq_quantize_layer(
     d_out, d_in = W.shape
     device = W.device
 
+    # H_inv may have been computed on CPU (cholesky not supported on MPS)
+    H_inv = H_inv.to(device)
+
     # We'll work on a copy — GPTQ modifies W in-place as it goes
     W = W.clone().float()
 

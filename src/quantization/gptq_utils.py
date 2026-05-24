@@ -103,6 +103,9 @@ def compute_hessian(X: torch.Tensor, damp: float = 0.01) -> torch.Tensor:
     Returns:
         H: Hessian matrix, shape [d_in, d_in]
     """
+    # Cast to float32 on CPU before the matrix multiply — fp16 loses too much
+    # precision here and causes Cholesky to fail downstream.
+    X = X.float().cpu()
     n_tokens = X.shape[1]
 
     # Core formula: H = 2 * X @ X.T / n_tokens
@@ -112,7 +115,7 @@ def compute_hessian(X: torch.Tensor, damp: float = 0.01) -> torch.Tensor:
     # This prevents singular matrices and improves numerical stability.
     # Think of it as saying "every weight matters at least a little bit."
     mean_diag = H.diagonal().mean().item()
-    H += damp * mean_diag * torch.eye(H.shape[0], device=H.device, dtype=H.dtype)
+    H += damp * mean_diag * torch.eye(H.shape[0], dtype=torch.float32)
 
     return H
 
@@ -132,13 +135,21 @@ def cholesky_inverse(H: torch.Tensor) -> torch.Tensor:
     Returns:
         H_inv: Inverse of H, same shape [d_in, d_in]
     """
-    # cholesky_inverse is not implemented on MPS; compute on CPU then move back
+    # cholesky_inverse is not implemented on MPS; always compute on CPU
     H_cpu = H.float().cpu()
-    try:
-        L = torch.linalg.cholesky(H_cpu)
-        H_inv = torch.cholesky_inverse(L)
-    except torch.linalg.LinAlgError:
-        print("  Warning: Cholesky failed, using pseudoinverse instead")
-        H_inv = torch.linalg.pinv(H_cpu)
 
+    # Retry with increasing diagonal damping before giving up on Cholesky
+    for extra_damp in [0.0, 1e-3, 1e-2, 1e-1]:
+        try:
+            H_damped = H_cpu + extra_damp * torch.eye(H_cpu.shape[0])
+            L = torch.linalg.cholesky(H_damped)
+            H_inv = torch.cholesky_inverse(L)
+            return H_inv.to(dtype=H.dtype, device=H.device)
+        except torch.linalg.LinAlgError:
+            continue
+
+    # Last resort: pseudoinverse with small regularization to avoid SVD blow-up
+    print("  Warning: Cholesky failed, using pseudoinverse instead")
+    H_reg = H_cpu + 1e-6 * torch.eye(H_cpu.shape[0])
+    H_inv = torch.linalg.pinv(H_reg)
     return H_inv.to(dtype=H.dtype, device=H.device)

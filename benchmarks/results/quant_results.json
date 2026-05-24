@@ -3,8 +3,8 @@
     "scheme": "fp16",
     "model_size_mb": 2098.176025390625,
     "perplexity": 9.833805259100924,
-    "tokens_per_second": 26.454306052811482,
-    "ttft_ms": 115.98900000001322,
+    "tokens_per_second": 18.06584822710898,
+    "ttft_ms": 127.65429199998835,
     "peak_memory_mb": 3250.828125,
     "quantization_time_s": 0.0
   },
@@ -12,8 +12,8 @@
     "scheme": "absmax_int8",
     "model_size_mb": 2098.176025390625,
     "perplexity": 10.209330954019123,
-    "tokens_per_second": 28.78186968676185,
-    "ttft_ms": 44.518750000065666,
+    "tokens_per_second": 24.01292902125133,
+    "ttft_ms": 54.82300050005051,
     "peak_memory_mb": 5350.90625,
     "quantization_time_s": 1.0
   }
