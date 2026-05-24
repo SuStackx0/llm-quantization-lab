@@ -1,0 +1,20 @@
+[
+  {
+    "scheme": "fp16",
+    "model_size_mb": 2098.176025390625,
+    "perplexity": 9.833805259100924,
+    "tokens_per_second": 26.454306052811482,
+    "ttft_ms": 115.98900000001322,
+    "peak_memory_mb": 3250.828125,
+    "quantization_time_s": 0.0
+  },
+  {
+    "scheme": "absmax_int8",
+    "model_size_mb": 2098.176025390625,
+    "perplexity": 10.209330954019123,
+    "tokens_per_second": 28.78186968676185,
+    "ttft_ms": 44.518750000065666,
+    "peak_memory_mb": 5350.90625,
+    "quantization_time_s": 1.0
+  }
+]
